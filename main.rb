@@ -18,7 +18,7 @@ area.each {|i|
     param = "&a=" + i.to_s
   end
   
-  url = "https://tv.yahoo.co.jp/search/?q=D4DJ+First+Mix" + param
+  url = "https://tv.yahoo.co.jp/search/?q=" + URI.encode_www_form_component(ARGV[0]) + param
 
   html = open(url) do |f|
     charset = f.charset
