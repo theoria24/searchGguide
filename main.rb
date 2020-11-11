@@ -31,7 +31,7 @@ area.each {|i|
     k = li.css(".rightarea > p")
     dm, dd = j[0].inner_text.split("/").map(&:to_i)
     st_h, st_m = j[1].inner_text.split("～")[0].split(":").map(&:to_i)
-    if st_h > 24 then
+    if st_h > 23 then
       date = Time.new(t.year, dm, dd, st_h - 24, st_m) + 24*60*60
     else
       date = Time.new(t.year, dm, dd, st_h, st_m)
