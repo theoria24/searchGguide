@@ -12,20 +12,18 @@ Search all TV programs in Japan.
 [![Github top language](https://img.shields.io/github/languages/top/theoria24/searchGguide)](https://github.com/theoria24/searchGguide/)
 [![Github license](https://img.shields.io/github/license/theoria24/searchGguide)](https://github.com/theoria24/searchGguide/)
 
-# Tags
-
-`Ruby` `Gguide`
-
 # Demo
 
-![Demo](https://user-images.githubusercontent.com/17396689/98734640-9a693080-23e5-11eb-9976-a32645bbc606.gif)
+![Demo](https://user-images.githubusercontent.com/17396689/98990468-d929f280-256d-11eb-8457-3fc562d705c8.gif)
 
 # Advantages
 
 You can search for all TV programs in Japan **at once**.
 
 # Installation
+
 ## Requirement
+
 - Ruby (I used Ruby 2.7.2 for development. Probably works on 2.6 as well.)
 - Bundler
 
@@ -38,9 +36,10 @@ bundle install
 # Minimal Example
 
 ```
-bundle exec ruby main.rb "search word"
+bundle exec ruby main.rb -a miyagi,bs search word
 ```
-If a keyword contains a space, please enclose it in quotation marks.
+
+If you don't specify the `-a` option, it will search for all programs in Japan.
 
 # Contributors
 
