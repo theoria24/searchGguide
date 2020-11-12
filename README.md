@@ -2,7 +2,7 @@
 
 <!-- # Short Description -->
 
-Search all TV shows in the country.
+Search all TV programs in Japan.
 
 <!-- # Badges -->
 
@@ -22,9 +22,12 @@ Search all TV shows in the country.
 
 # Advantages
 
-Search all TV shows in the country at once.
+You can search for all TV programs in Japan **at once**.
 
 # Installation
+## Requirement
+- Ruby (I used Ruby 2.7.2 for development. Probably works on 2.6 as well.)
+- Bundler
 
 ```
 git clone https://github.com/theoria24/searchGguide.git
@@ -37,6 +40,7 @@ bundle install
 ```
 bundle exec ruby main.rb "search word"
 ```
+If a keyword contains a space, please enclose it in quotation marks.
 
 # Contributors
 
