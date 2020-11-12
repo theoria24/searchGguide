@@ -17,32 +17,36 @@ area.each {|i|
   else
     param = "&a=" + i.to_s
   end
-  
-  url = "https://tv.yahoo.co.jp/search/?q=" + URI.encode_www_form_component(ARGV[0]) + param
+  c = 10
+  s = 1
+  while c == 10 do
+    url = "https://tv.yahoo.co.jp/search/?q=" + URI.encode_www_form_component(ARGV[0]) + param + "&s=" + s.to_s
+    html = URI.open(url) do |f|
+      charset = f.charset
+      f.read
+    end
 
-  html = URI.open(url) do |f|
-    charset = f.charset
-    f.read
+    doc = Nokogiri::HTML.parse(html)
+    programlist = doc.css(".programlist > li")
+    programlist.each {|li|
+      j = li.css(".leftarea > p > em")
+      k = li.css(".rightarea > p")
+      dm, dd = j[0].inner_text.split("/").map(&:to_i)
+      st_h, st_m = j[1].inner_text.split("～")[0].split(":").map(&:to_i)
+      if st_h > 23 then
+        date = Time.new(t.year, dm, dd, st_h - 24, st_m) + 24*60*60
+      else
+        date = Time.new(t.year, dm, dd, st_h, st_m)
+      end
+      # 年明け判定
+      if date < t then
+        date = Time.new(date.year + 1, date.month, date.day, date.hour, date.min)
+      end
+
+      list << date.strftime("%Y-%m-%d %H:%M") + " " + k[1].css("span")[0].inner_text.gsub(/（.+）/, "（#{d[i]}）") + "\t" + k[0].inner_text
+    }
+    s += c = programlist.length
   end
-
-  doc = Nokogiri::HTML.parse(html)
-  doc.css(".programlist > li").each {|li|
-    j = li.css(".leftarea > p > em")
-    k = li.css(".rightarea > p")
-    dm, dd = j[0].inner_text.split("/").map(&:to_i)
-    st_h, st_m = j[1].inner_text.split("～")[0].split(":").map(&:to_i)
-    if st_h > 23 then
-      date = Time.new(t.year, dm, dd, st_h - 24, st_m) + 24*60*60
-    else
-      date = Time.new(t.year, dm, dd, st_h, st_m)
-    end
-    # 年明け判定
-    if date < t then
-      date = Time.new(date.year + 1, date.month, date.day, date.hour, date.min)
-    end
-
-    list << date.strftime("%Y-%m-%d %H:%M") + " " + k[1].css("span")[0].inner_text.gsub(/（.+）/, "（#{d[i]}）") + "\t" + k[0].inner_text
-  }
   pb.increment
 }
 
