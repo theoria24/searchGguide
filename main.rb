@@ -72,11 +72,13 @@ area.each {|i|
         date = Time.new(date.year + 1, date.month, date.day, date.hour, date.min)
       end
 
-      list << date.strftime(format) + " " + k[1].css("span")[0].inner_text.gsub(/（.+）/, "（#{d[i]}）") + "\t" + k[0].inner_text
+      list << { time: date, area: d[i], station: k[1].css("span")[0].inner_text.gsub(/（.+）/, ""), title: k[0].inner_text}
     }
     s += c = programlist.length
   end
   pb.increment
 }
 
-puts list.sort
+list.sort {|a, b| a[:time] <=> b[:time]}.each do |l|
+  puts l[:time].strftime(format) + "\t" + l[:area] + "\t" + l[:station] + "\t" + l[:title]
+end
