@@ -14,7 +14,7 @@ Search all TV programs in Japan.
 
 # Demo
 
-![Demo](https://user-images.githubusercontent.com/17396689/98990468-d929f280-256d-11eb-8457-3fc562d705c8.gif)
+![Demo](https://user-images.githubusercontent.com/17396689/99578002-7ded7980-2a1f-11eb-9eaa-f6ee81e2389f.gif)
 
 # Advantages
 
@@ -36,7 +36,7 @@ bundle install
 # Minimal Example
 
 ```
-bundle exec ruby main.rb -a miyagi,bs -f "%Y-%m-%d %H:%M" search word
+bundle exec ruby main.rb -a miyagi,bs -f "%m/%d %H:%M" search word
 ```
 
 If you don't specify the `-a` option, it will search for all programs in Japan.
