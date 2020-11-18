@@ -36,7 +36,7 @@ bundle install
 # Minimal Example
 
 ```
-bundle exec ruby main.rb -a miyagi,bs search word
+bundle exec ruby main.rb -a miyagi,bs -f "%Y-%m-%d %H:%M" search word
 ```
 
 If you don't specify the `-a` option, it will search for all programs in Japan.
