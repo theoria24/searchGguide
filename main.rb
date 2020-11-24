@@ -24,6 +24,11 @@ d = {
   52 => '香川', 51 => '愛媛', 54 => '高知', 55 => '福岡', 61 => '佐賀', 57 => '長崎', 56 => '熊本', 60 => '大分', 59 => '宮崎',
   58 => '鹿児島', 62 => '沖縄', 98 => 'BS', 99 => 'CS'
 }
+gnrl = {
+  'news' => '00', 'sports' => '01', 'info' => '02', 'drama' => '03', 'music' => '04', 'variety' => '05',
+  'movie' => '06', 'anime' => '07', 'documentary' => '08', 'performance' => '09', 'education' => '10',
+  'welfare' => '11', 'other' => '15'
+}
 area = d.keys
 format = '%Y-%m-%d %H:%M'
 
@@ -33,25 +38,39 @@ opt.on('-a', '--area pref1,pref2,...', Array, 'Prefectures (and/or bs, cs) to se
     area = []
     a.each do |pr|
       if prs[pr].nil?
-        puts "#{pr} is an invalid argument"
+        puts "\"#{pr}\" is an invalid argument"
+        exit
       else
         area << prs[pr]
       end
     end
   end
 end
-opt.on('-f', '--format VALUE', 'Set the date and time format (cf. Time#strftime)') { |f| format = f }
+gnr = ''
+opt.on('-g', '--genre GENRE', 'Set the genre of the program to search') do |g|
+  if g != ['all']
+    if gnrl[g].nil?
+      puts "\"#{g}\" is an invalid genre"
+      exit
+    else
+      gnr = "&g=#{gnrl[g]}"
+      puts "Set \"#{g}\" as a genre to search"
+    end
+  end
+end
+
+opt.on('-f', '--format FORMAT', 'Set the date and time format (cf. Time#strftime)') { |f| format = f }
 opt.banner += ' KEYWORD'
 opt.parse!(ARGV)
 
-def param(area)
+def param(area, genre, pagenum)
   case area
   when 98
-    '23&t=1'
+    "&a=23&t=1#{genre}&s=#{pagenum}"
   when 99
-    '23&t=2'
+    "&a=23&t=2#{genre}&s=#{pagenum}"
   else
-    "#{area}&t=3"
+    "&a=#{area}&t=3#{genre}&s=#{pagenum}"
   end
 end
 
@@ -79,7 +98,7 @@ area.each do |i|
   c = 10
   s = 1
   while c == 10
-    url = URI.parse("https://tv.yahoo.co.jp/search/?q=#{URI.encode_www_form_component(kywd)}&a=#{param(i)}&s=#{s}")
+    url = URI.parse("https://tv.yahoo.co.jp/search/?q=#{URI.encode_www_form_component(kywd)}#{param(i, gnr, s)}")
     doc = Nokogiri::HTML.parse(url.open.read)
     programlist = doc.css('.programlist > li')
     programlist.each do |li|
