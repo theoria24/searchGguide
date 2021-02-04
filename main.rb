@@ -2,7 +2,7 @@
 
 require 'optparse'
 require 'open-uri'
-require 'nokogiri'
+require 'json'
 require 'date'
 require 'ruby-progressbar'
 
@@ -13,27 +13,13 @@ prs = {
   'shizuoka' => 35, 'aichi' => 33, 'mie' => 38, 'shiga' => 45, 'kyoto' => 41, 'osaka' => 40, 'hyogo' => 42,
   'nara' => 44, 'wakayama' => 43, 'tottori' => 49, 'shimane' => 48, 'okayama' => 47, 'hiroshima' => 46,
   'yamaguchi' => 50, 'tokushima' => 53, 'kagawa' => 52, 'ehime' => 51, 'kochi' => 54, 'fukuoka' => 55, 'saga' => 61,
-  'nagasaki' => 57, 'kumamoto' => 56, 'oita' => 60, 'miyazaki' => 59, 'kagoshima' => 58, 'okinawa' => 62, 'bs' => 98,
-  'cs' => 99
+  'nagasaki' => 57, 'kumamoto' => 56, 'oita' => 60, 'miyazaki' => 59, 'kagoshima' => 58, 'okinawa' => 62, 'bs' => 99
 }
-d = {
-  10 => '北海道', 22 => '青森', 20 => '岩手', 17 => '宮城', 18 => '秋田', 19 => '山形', 21 => '福島', 26 => '茨城', 28 => '栃木',
-  25 => '群馬', 29 => '埼玉', 27 => '千葉', 23 => '東京', 24 => '神奈川', 31 => '新潟', 37 => '富山', 34 => '石川', 36 => '福井',
-  32 => '山梨', 30 => '長野', 39 => '岐阜', 35 => '静岡', 33 => '愛知', 38 => '三重', 45 => '滋賀', 41 => '京都', 40 => '大阪',
-  42 => '兵庫', 44 => '奈良', 43 => '和歌山', 49 => '鳥取', 48 => '島根', 47 => '岡山', 46 => '広島', 50 => '山口', 53 => '徳島',
-  52 => '香川', 51 => '愛媛', 54 => '高知', 55 => '福岡', 61 => '佐賀', 57 => '長崎', 56 => '熊本', 60 => '大分', 59 => '宮崎',
-  58 => '鹿児島', 62 => '沖縄', 98 => 'BS', 99 => 'CS'
-}
-gnrl = {
-  'news' => '00', 'sports' => '01', 'info' => '02', 'drama' => '03', 'music' => '04', 'variety' => '05',
-  'movie' => '06', 'anime' => '07', 'documentary' => '08', 'performance' => '09', 'education' => '10',
-  'welfare' => '11', 'other' => '15'
-}
-area = d.keys
-format = '%Y-%m-%d %H:%M'
+area = prs.values
+format = '%Y/%m/%d(%a) %H:%M'
 
 opt = OptionParser.new
-opt.on('-a', '--area pref1,pref2,...', Array, 'Prefectures (and/or bs, cs) to search (comma separated list)') do |a|
+opt.on('-a', '--area pref1,pref2,...', Array, 'Prefectures (and/or bs) to search (comma separated list)') do |a|
   if a != ['all']
     area = []
     a.each do |pr|
@@ -46,47 +32,21 @@ opt.on('-a', '--area pref1,pref2,...', Array, 'Prefectures (and/or bs, cs) to se
     end
   end
 end
-gnr = ''
-opt.on('-g', '--genre GENRE', 'Set the genre of the program to search') do |g|
-  if g != ['all']
-    if gnrl[g].nil?
-      puts "\"#{g}\" is an invalid genre"
-      exit
-    else
-      gnr = "&g=#{gnrl[g]}"
-      puts "Set \"#{g}\" as a genre to search"
-    end
-  end
-end
 
 opt.on('-f', '--format FORMAT', 'Set the date and time format (cf. Time#strftime)') { |f| format = f }
 opt.banner += ' KEYWORD'
 opt.parse!(ARGV)
 
-def param(area, genre, pagenum)
+def param(area, start)
   case area
-  when 98
-    "&a=23&t=1#{genre}&s=#{pagenum}"
   when 99
-    "&a=23&t=2#{genre}&s=#{pagenum}"
+    "&siTypeId=1&areaId=23&start=#{start}"
   else
-    "&a=#{area}&t=3#{genre}&s=#{pagenum}"
+    "&siTypeId=3&areaId=#{area}&start=#{start}"
   end
 end
 
-def convtime(today, month, day, hour, min)
-  time =
-    if hour > 23
-      Time.new(today.year, month, day, hour - 24, min) + 24 * 60 * 60
-    else
-      Time.new(today.year, month, day, hour, min)
-    end
-  time = Time.new(time.year + 1, time.month, time.day, time.hour, time.min) if time < today
-  time
-end
-
 kywd = ARGV.join(' ')
-today = Time.now - 24 * 60 * 60
 list = []
 pb = ProgressBar.create(
   title: "Searching for \"#{kywd}\"",
@@ -94,31 +54,35 @@ pb = ProgressBar.create(
   format: '%t: |%B| %p%%',
   length: 75
 )
-area.each do |i|
+
+area.each do |a|
   c = 10
-  s = 1
+  s = 0
   while c == 10
-    url = URI.parse("https://tv.yahoo.co.jp/search/?q=#{URI.encode_www_form_component(kywd)}#{param(i, gnr, s)}")
-    doc = Nokogiri::HTML.parse(url.open.read)
-    programlist = doc.css('.programlist > li')
-    programlist.each do |li|
-      j = li.css('.leftarea > p > em')
-      k = li.css('.rightarea > p')
-      dm, dd = j[0].inner_text.split('/').map(&:to_i)
-      st_h, st_m = j[1].inner_text.split('～')[0].split(':').map(&:to_i)
-      date = convtime(today, dm, dd, st_h, st_m)
-      list << {
-        time: date,
-        area: d[i],
-        station: k[1].css('span')[0].inner_text.gsub(/（.+）/, ''),
-        title: k[0].inner_text
-      }
+    c = 0
+    url = URI.parse("https://tv.yahoo.co.jp/api/adapter?query=#{URI.encode_www_form_component(kywd)}#{param(a, s)}")
+    URI.open(url, 'target-api' => 'mindsSiQuery') do |f|
+      j = JSON.parse(f.read)
+      j['ResultSet']['Result'].each do |i|
+        el = if i['element']
+               i['element'].join
+             else
+               ''
+             end
+        list << {
+          time: Time.at(i['broadCastStartDate']),
+          area: i['areaName'],
+          station: i['serviceName'],
+          title: el + i['title']
+        }
+        s += 1
+        c += 1
+      end
     end
-    s += c = programlist.length
   end
   pb.increment
 end
 
-list.sort { |a, b| a[:time] <=> b[:time] }.each do |l|
-  puts "#{l[:time].strftime(format)}\t#{l[:area]}\t#{l[:station]}\t#{l[:title]}"
+list.uniq.sort { |a, b| a[:time] <=> b[:time] }.each do |l|
+  puts "#{l[:time].strftime(format)}\t#{l[:area].join(', ')}\t#{l[:station]}\t#{l[:title]}"
 end
