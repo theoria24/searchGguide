@@ -14,7 +14,7 @@ Search all TV programs in Japan.
 
 # Demo
 
-![Demo](https://user-images.githubusercontent.com/17396689/99578002-7ded7980-2a1f-11eb-9eaa-f6ee81e2389f.gif)
+![Demo](https://user-images.githubusercontent.com/17396689/106942485-912efc00-6767-11eb-9958-552172b60cdb.gif)
 
 # Advantages
 
@@ -24,7 +24,7 @@ You can search for all TV programs in Japan **at once**.
 
 ## Requirement
 
-- Ruby (I used Ruby 2.7.2 for development. Probably works on 2.6 as well.)
+- Ruby (I used Ruby 3.0.0 for development. Probably works on 2.6, 2.7 as well.)
 - Bundler
 
 ```
