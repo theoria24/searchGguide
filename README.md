@@ -39,7 +39,7 @@ bundle install
 bundle exec ruby main.rb -a miyagi,bs -f "%m/%d %H:%M" search word
 ```
 
-If you don't specify the `-a` option, it will search for all programs in Japan.
+If you don't specify the `-a` option, it will search for programs in all prefectures in Japan.
 
 # Contributors
 
