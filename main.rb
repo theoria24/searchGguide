@@ -2,6 +2,7 @@
 
 require 'optparse'
 require 'open-uri'
+require 'net/http'
 require 'json'
 require 'date'
 require 'ruby-progressbar'
@@ -17,6 +18,7 @@ prs = {
 }
 area = prs.values
 format = '%Y/%m/%d(%a) %H:%M'
+debug = false
 
 opt = OptionParser.new
 opt.on('-a', '--area pref1,pref2,...', Array, 'Prefectures (and/or bs) to search (comma separated list)') do |a|
@@ -34,17 +36,43 @@ opt.on('-a', '--area pref1,pref2,...', Array, 'Prefectures (and/or bs) to search
 end
 
 opt.on('-f', '--format FORMAT', 'Set the date and time format (cf. Time#strftime)') { |f| format = f }
+opt.on('-d', '--debug', 'Debug node') { debug = true }
 opt.banner += ' KEYWORD'
 opt.parse!(ARGV)
 
-def param(area, start)
+def param(query, area, start)
   case area
   when 99
-    "&siTypeId=1&areaId=23&start=#{start}"
+    {
+      query: query,
+      siTypeId: "1",
+      majorGenreId: "",
+      areaId: "23",
+      duration: "",
+      element: "",
+      start: start,
+      results: 10,
+      sort: "+broadCastStartDate"
+    }
   else
-    "&siTypeId=3&areaId=#{area}&start=#{start}"
+    {
+      query: query,
+      siTypeId: "3",
+      majorGenreId: "",
+      areaId: area.to_s,
+      duration: "",
+      element: "",
+      start: start,
+      results: 10,
+      sort: "+broadCastStartDate"
+    }
   end
 end
+
+url = URI.parse("https://tv.yahoo.co.jp/api/adapter")
+http = Net::HTTP.new(url.host, url.port)
+http.use_ssl = url.scheme === "https"
+headers = {'target-api' => 'mindsSiQuery', 'target-path' => '/TVWebService/V2/contents'}
 
 kywd = ARGV.join(' ')
 list = []
@@ -58,26 +86,26 @@ pb = ProgressBar.create(
 area.each do |a|
   c = 10
   s = 0
-  while c == 10
+  while c == 10 && s < 30
     c = 0
-    url = URI.parse("https://tv.yahoo.co.jp/api/adapter?query=#{URI.encode_www_form_component(kywd)}#{param(a, s)}")
-    URI.open(url, 'target-api' => 'mindsSiQuery') do |f|
-      j = JSON.parse(f.read)
-      j['ResultSet']['Result'].each do |i|
-        el = if i['element']
-               i['element'].join
-             else
-               ''
-             end
-        list << {
-          time: Time.at(i['broadCastStartDate']),
-          area: i['areaName'],
-          station: i['serviceName'],
-          title: el + i['title']
-        }
-        s += 1
-        c += 1
-      end
+    res = http.post(url.path, param(kywd, a, s).to_json, headers)
+    p res.code if debug
+    json = JSON.parse(res.body)
+    pp json if debug
+    json["ResultSet"]["Result"].each do |i|
+      el = if i['element']
+             i['element'].join
+           else
+             ''
+           end
+      list << {
+        time: Time.at(i['broadCastStartDate']),
+        area: i['areaName'],
+        station: i['serviceName'],
+        title: el + i['title']
+      }
+      s += 1
+      c += 1
     end
   end
   pb.increment
