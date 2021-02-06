@@ -72,7 +72,7 @@ end
 url = URI.parse("https://tv.yahoo.co.jp/api/adapter")
 http = Net::HTTP.new(url.host, url.port)
 http.use_ssl = url.scheme === "https"
-headers = {'target-api' => 'mindsSiQuery', 'target-path' => '/TVWebService/V2/contents'}
+headers = {'target-api' => 'mindsSiQuery', 'target-path' => '/TVWebService/V2/contents', 'content-type' => 'application/json'}
 
 kywd = ARGV.join(' ')
 list = []
