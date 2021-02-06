@@ -40,39 +40,21 @@ opt.on('-d', '--debug', 'Debug node') { debug = true }
 opt.banner += ' KEYWORD'
 opt.parse!(ARGV)
 
-def param(query, area, start)
-  case area
-  when 99
-    {
-      query: query,
-      siTypeId: "1",
-      majorGenreId: "",
-      areaId: "23",
-      duration: "",
-      element: "",
-      start: start,
-      results: 10,
-      sort: "+broadCastStartDate"
-    }
+def set_param(kywd, area, start)
+  param = { 'query' => kywd, 'siTypeId' => '3', 'majorGenreId' => '', 'areaId' => '23', 'start' => 0 }
+  if area == 99
+    param['siTypeId'] = '1'
   else
-    {
-      query: query,
-      siTypeId: "3",
-      majorGenreId: "",
-      areaId: area.to_s,
-      duration: "",
-      element: "",
-      start: start,
-      results: 10,
-      sort: "+broadCastStartDate"
-    }
+    param['areaId'] = area.to_s
   end
+  param['start'] = start
+  param
 end
 
-url = URI.parse("https://tv.yahoo.co.jp/api/adapter")
+url = URI.parse('https://tv.yahoo.co.jp/api/adapter')
 http = Net::HTTP.new(url.host, url.port)
-http.use_ssl = url.scheme === "https"
-headers = {'target-api' => 'mindsSiQuery', 'target-path' => '/TVWebService/V2/contents', 'content-type' => 'application/json'}
+http.use_ssl = true
+headers = { 'target-api' => 'mindsSiQuery', 'content-type' => 'application/json' }
 
 kywd = ARGV.join(' ')
 list = []
@@ -88,11 +70,11 @@ area.each do |a|
   s = 0
   while c == 10 && s < 30
     c = 0
-    res = http.post(url.path, param(kywd, a, s).to_json, headers)
+    res = http.post(url.path, set_param(kywd, a, s).to_json, headers)
     p res.code if debug
     json = JSON.parse(res.body)
     pp json if debug
-    json["ResultSet"]["Result"].each do |i|
+    json['ResultSet']['Result'].each do |i|
       el = if i['element']
              i['element'].join
            else
