@@ -1,7 +1,3 @@
-### 現在、正常に動作しません。無限ループになるので修正以外で使用しないでください。
-
-### 修正の際も負荷をかけないよう細心の注意をお願いいたします。
-
 # searchGguide
 
 <!-- # Short Description -->
@@ -48,5 +44,6 @@ If you don't specify the `-a` option, it will search for programs in all prefect
 # Contributors
 
 - [theoria24](https://github.com/theoria24)
+- [kPherox](https://github.com/kPherox)
 
 <!-- CREATED_BY_LEADYOU_README_GENERATOR -->
