@@ -16,7 +16,13 @@ prs = {
   'yamaguchi' => 50, 'tokushima' => 53, 'kagawa' => 52, 'ehime' => 51, 'kochi' => 54, 'fukuoka' => 55, 'saga' => 61,
   'nagasaki' => 57, 'kumamoto' => 56, 'oita' => 60, 'miyazaki' => 59, 'kagoshima' => 58, 'okinawa' => 62, 'bs' => 99
 }
+gnrl = {
+  'news' => '0x0', 'sports' => '0x1', 'info' => '0x2', 'drama' => '0x3', 'music' => '0x4', 'variety' => '0x5',
+  'movie' => '0x6', 'anime' => '0x7', 'documentary' => '0x8', 'performance' => '0x9', 'education' => '0xA',
+  'welfare' => '0xB', 'other' => '0xF'
+}
 area = prs.values
+gnr = ''
 format = '%Y/%m/%d(%a) %H:%M'
 pbar = true
 debug = false
@@ -35,7 +41,17 @@ opt.on('-a', '--area pref1,pref2,...', Array, 'Prefectures (and/or bs) to search
     end
   end
 end
-
+opt.on('-g', '--genre GENRE', 'Set the genre of the program to search') do |g|
+  if g != ['all']
+    if gnrl[g].nil?
+      puts "\"#{g}\" is an invalid genre"
+      exit
+    else
+      gnr = gnrl[g]
+      puts "Set \"#{g}\" as a genre to search" if debug
+    end
+  end
+end
 opt.on('-f', '--format FORMAT', 'Set the date and time format (cf. Time#strftime).') { |f| format = f }
 opt.on('-b', '--[no-]bar', 'Show (or not show) the progress bar.') { |b| pbar = b }
 opt.on('-d', '--debug', 'Debug mode') { debug = true }
@@ -48,13 +64,14 @@ if kywd == ''
   exit
 end
 
-def set_param(kywd, area, start)
+def set_param(kywd, genre, area, start)
   param = { 'query' => kywd, 'siTypeId' => '3', 'majorGenreId' => '', 'areaId' => '23', 'start' => 0 }
   if area == 99
     param['siTypeId'] = '1'
   else
     param['areaId'] = area.to_s
   end
+  param['majorGenreId'] = genre
   param['start'] = start
   param
 end
@@ -79,7 +96,7 @@ area.each do |a|
   s = 0
   while c == 10 && s < 30
     c = 0
-    res = http.post(url.path, set_param(kywd, a, s).to_json, headers)
+    res = http.post(url.path, set_param(kywd, gnr, a, s).to_json, headers)
     p res.code if debug
     json = JSON.parse(res.body)
     pp json if debug
