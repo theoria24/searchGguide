@@ -36,11 +36,17 @@ opt.on('-a', '--area pref1,pref2,...', Array, 'Prefectures (and/or bs) to search
   end
 end
 
-opt.on('-f', '--format FORMAT', 'Set the date and time format (cf. Time#strftime)') { |f| format = f }
+opt.on('-f', '--format FORMAT', 'Set the date and time format (cf. Time#strftime).') { |f| format = f }
 opt.on('-b', '--[no-]bar', 'Show (or not show) the progress bar.') { |b| pbar = b }
 opt.on('-d', '--debug', 'Debug mode') { debug = true }
 opt.banner += ' KEYWORD'
 opt.parse!(ARGV)
+
+kywd = ARGV.join(' ')
+if kywd == ''
+  puts '"KEYWORD" is required.'
+  exit
+end
 
 def set_param(kywd, area, start)
   param = { 'query' => kywd, 'siTypeId' => '3', 'majorGenreId' => '', 'areaId' => '23', 'start' => 0 }
@@ -58,7 +64,6 @@ http = Net::HTTP.new(url.host, url.port)
 http.use_ssl = true
 headers = { 'target-api' => 'mindsSiQuery', 'content-type' => 'application/json' }
 
-kywd = ARGV.join(' ')
 list = []
 if pbar
   pb = ProgressBar.create(
