@@ -18,6 +18,7 @@ prs = {
 }
 area = prs.values
 format = '%Y/%m/%d(%a) %H:%M'
+pbar = true
 debug = false
 
 opt = OptionParser.new
@@ -36,6 +37,7 @@ opt.on('-a', '--area pref1,pref2,...', Array, 'Prefectures (and/or bs) to search
 end
 
 opt.on('-f', '--format FORMAT', 'Set the date and time format (cf. Time#strftime)') { |f| format = f }
+opt.on('-b', '--[no-]bar', 'Show (or not show) the progress bar.') { |b| pbar = b }
 opt.on('-d', '--debug', 'Debug node') { debug = true }
 opt.banner += ' KEYWORD'
 opt.parse!(ARGV)
@@ -58,12 +60,14 @@ headers = { 'target-api' => 'mindsSiQuery', 'content-type' => 'application/json'
 
 kywd = ARGV.join(' ')
 list = []
-pb = ProgressBar.create(
-  title: "Searching for \"#{kywd}\"",
-  total: area.length,
-  format: '%t: |%B| %p%%',
-  length: 75
-)
+if pbar
+  pb = ProgressBar.create(
+    title: "Searching for \"#{kywd}\"",
+    total: area.length,
+    format: '%t: |%B| %p%%',
+    length: 75
+  )
+end
 
 area.each do |a|
   c = 10
@@ -90,7 +94,7 @@ area.each do |a|
       c += 1
     end
   end
-  pb.increment
+  pb.increment if pbar
 end
 
 list.uniq.sort { |a, b| a[:time] <=> b[:time] }.each do |l|
