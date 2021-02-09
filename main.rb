@@ -38,7 +38,7 @@ end
 
 opt.on('-f', '--format FORMAT', 'Set the date and time format (cf. Time#strftime)') { |f| format = f }
 opt.on('-b', '--[no-]bar', 'Show (or not show) the progress bar.') { |b| pbar = b }
-opt.on('-d', '--debug', 'Debug node') { debug = true }
+opt.on('-d', '--debug', 'Debug mode') { debug = true }
 opt.banner += ' KEYWORD'
 opt.parse!(ARGV)
 
