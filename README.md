@@ -4,6 +4,8 @@
 
 Search all TV programs in Japan.
 
+See [Wiki](https://github.com/theoria24/searchGguide/wiki) for detailed usage instructions (in Japanese).
+
 <!-- # Badges -->
 
 [![Github issues](https://img.shields.io/github/issues/theoria24/searchGguide)](https://github.com/theoria24/searchGguide/issues)
