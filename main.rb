@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'optparse'
+require 'tty-prompt'
 require 'open-uri'
 require 'net/http'
 require 'json'
@@ -17,26 +18,74 @@ prs = {
   'nagasaki' => 57, 'kumamoto' => 56, 'oita' => 60, 'miyazaki' => 59, 'kagoshima' => 58, 'okinawa' => 62, 'bs' => 99
 }
 gnrl = {
-  'news' => '0x0', 'sports' => '0x1', 'info' => '0x2', 'drama' => '0x3', 'music' => '0x4', 'variety' => '0x5',
-  'movie' => '0x6', 'anime' => '0x7', 'documentary' => '0x8', 'performance' => '0x9', 'education' => '0xA',
-  'welfare' => '0xB', 'other' => '0xF'
+  'all' => '', 'news' => '0x0', 'sports' => '0x1', 'info' => '0x2', 'drama' => '0x3', 'music' => '0x4',
+  'variety' => '0x5', 'movie' => '0x6', 'anime' => '0x7', 'documentary' => '0x8', 'performance' => '0x9',
+  'education' => '0xA', 'welfare' => '0xB', 'other' => '0xF'
 }
-area = prs.values
-gnr = ''
-format = '%Y/%m/%d(%a) %H:%M'
-pbar = true
-debug = false
+
+def set_param(key, genre, area, start)
+  param = { 'query' => key, 'siTypeId' => '3', 'majorGenreId' => genre, 'areaId' => area.to_s,
+            'start' => start }
+  param['siTypeId'] = '1' if area == 99
+  param
+end
+
+def search_request(key, genre, area, start)
+  url = URI.parse('https://tv.yahoo.co.jp/api/adapter')
+  http = Net::HTTP.new(url.host, url.port)
+  http.use_ssl = true
+  headers = { 'target-api' => 'mindsSiQuery', 'content-type' => 'application/json' }
+  http.post(url.path, set_param(key, genre, area, start).to_json, headers)
+end
+
+def list_format(param)
+  el = if param['element']
+         param['element'].join
+       else
+         ''
+       end
+  { time: Time.at(param['broadCastStartDate']),
+    area: param['areaName'],
+    station: param['serviceName'],
+    title: el + param['title'] }
+end
+
+def show_list(list, format)
+  list.uniq.sort { |a, b| a[:time] <=> b[:time] }.each do |l|
+    puts "#{l[:time].strftime(format)}\t#{l[:area].join(', ')}\t#{l[:station]}\t#{l[:title]}"
+  end
+end
+
+def interactive_set(option, prs, gnrl)
+  prompt = TTY::Prompt.new
+  option['kywd'] = prompt.ask('Search keyword?', required: true)
+  option['area'] = prompt.multi_select('Prefectures (and/or bs) to search?', prs)
+  option['gnr'] = prompt.select('What genre to search?', gnrl)
+  option['format'] = prompt.ask('Date and time format?', default: '%Y/%m/%d(%a) %H:%M')
+  option['pbar'] = prompt.yes?('Show progress bar?')
+end
+
+option = {
+  'kywd' => '',
+  'area' => prs.values,
+  'gnr' => '',
+  'format' => '%Y/%m/%d(%a) %H:%M',
+  'pbar' => true,
+  'debug' => false
+}
 
 opt = OptionParser.new
+opt.on('-d', '--debug', 'Debug mode') { option['debug'] = true }
+opt.on('-i', '--interactive', 'Interactive mode') { option['interactive'] = true }
 opt.on('-a', '--area pref1,pref2,...', Array, 'Prefectures (and/or bs) to search (comma separated list)') do |a|
   if a != ['all']
-    area = []
+    option['area'] = []
     a.each do |pr|
       if prs[pr].nil?
         puts "\"#{pr}\" is an invalid argument"
         exit
       else
-        area << prs[pr]
+        option['area'] << prs[pr]
       end
     end
   end
@@ -47,78 +96,46 @@ opt.on('-g', '--genre GENRE', 'Set the genre of the program to search') do |g|
       puts "\"#{g}\" is an invalid genre"
       exit
     else
-      gnr = gnrl[g]
-      puts "Set \"#{g}\" as a genre to search" if debug
+      option['gnr'] = gnrl[g]
+      puts "Set \"#{g}\" as a genre to search" if option['debug']
     end
   end
 end
-opt.on('-f', '--format FORMAT', 'Set the date and time format (cf. Time#strftime).') { |f| format = f }
-opt.on('-b', '--[no-]bar', 'Show (or not show) the progress bar.') { |b| pbar = b }
-opt.on('-d', '--debug', 'Debug mode') { debug = true }
+opt.on('-f', '--format FORMAT', 'Set the date and time format (cf. Time#strftime).') { |f| option['format'] = f }
+opt.on('-b', '--[no-]bar', 'Show (or not show) the progress bar.') { |b| option['pbar'] = b }
 opt.banner += ' KEYWORD'
 opt.parse!(ARGV)
 
-kywd = ARGV.join(' ')
-if kywd == ''
-  puts '"KEYWORD" is required.'
-  exit
-end
-
-def set_param(kywd, genre, area, start)
-  param = { 'query' => kywd, 'siTypeId' => '3', 'majorGenreId' => '', 'areaId' => '23', 'start' => 0 }
-  if area == 99
-    param['siTypeId'] = '1'
-  else
-    param['areaId'] = area.to_s
+if option['interactive']
+  interactive_set(option, prs, gnrl)
+else
+  option['kywd'] = ARGV.join(' ')
+  if option['kywd'] == ''
+    puts '"KEYWORD" is required.'
+    exit
   end
-  param['majorGenreId'] = genre
-  param['start'] = start
-  param
 end
 
-url = URI.parse('https://tv.yahoo.co.jp/api/adapter')
-http = Net::HTTP.new(url.host, url.port)
-http.use_ssl = true
-headers = { 'target-api' => 'mindsSiQuery', 'content-type' => 'application/json' }
-
-list = []
-if pbar
+if option['pbar']
   pb = ProgressBar.create(
-    title: "Searching for \"#{kywd}\"",
-    total: area.length,
+    title: "Searching for \"#{option['kywd']}\"",
+    total: option['area'].length,
     format: '%t: |%B| %p%%',
     length: 75
   )
 end
-
-area.each do |a|
-  c = 10
-  s = 0
-  while c == 10 && s < 30
-    c = 0
-    res = http.post(url.path, set_param(kywd, gnr, a, s).to_json, headers)
-    p res.code if debug
-    json = JSON.parse(res.body)
-    pp json if debug
-    json['ResultSet']['Result'].each do |i|
-      el = if i['element']
-             i['element'].join
-           else
-             ''
-           end
-      list << {
-        time: Time.at(i['broadCastStartDate']),
-        area: i['areaName'],
-        station: i['serviceName'],
-        title: el + i['title']
-      }
-      s += 1
-      c += 1
+list = []
+option['area'].each do |a|
+  3.times do |s|
+    res = search_request(option['kywd'], option['gnr'], a, s * 10)
+    p res.code if option['debug']
+    json = JSON.parse(res.body)['ResultSet']
+    pp json if option['debug']
+    json['Result'].each do |i|
+      list << list_format(i)
     end
+    break if json['attribute']['totalResultsReturned'] < 10
   end
-  pb.increment if pbar
+  pb.increment if option['pbar']
 end
-
-list.uniq.sort { |a, b| a[:time] <=> b[:time] }.each do |l|
-  puts "#{l[:time].strftime(format)}\t#{l[:area].join(', ')}\t#{l[:station]}\t#{l[:title]}"
-end
+show_list(list, option['format'])
