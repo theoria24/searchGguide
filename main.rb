@@ -31,11 +31,11 @@ def set_param(key, genre, area, start)
 end
 
 def search_request(key, genre, area, start)
-  url = URI.parse('https://tv.yahoo.co.jp/api/adapter')
+  url = URI.parse('https://tv.yahoo.co.jp/api/adapter?_api=mindsSiQuery')
   http = Net::HTTP.new(url.host, url.port)
   http.use_ssl = true
   headers = { 'target-api' => 'mindsSiQuery', 'content-type' => 'application/json' }
-  http.post(url.path, set_param(key, genre, area, start).to_json, headers)
+  http.post(url, set_param(key, genre, area, start).to_json, headers)
 end
 
 def list_format(param)
