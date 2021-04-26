@@ -3,10 +3,10 @@ GEM
   specs:
     pastel (0.8.0)
       tty-color (~> 0.5)
-    ruby-progressbar (1.10.1)
+    ruby-progressbar (1.11.0)
     tty-color (0.6.0)
     tty-cursor (0.7.1)
-    tty-prompt (0.23.0)
+    tty-prompt (0.23.1)
       pastel (~> 0.8)
       tty-reader (~> 0.8)
     tty-reader (0.9.0)
@@ -24,4 +24,4 @@ DEPENDENCIES
   tty-prompt
 
 BUNDLED WITH
-   2.1.4
+   2.2.16
